@@ -1,23 +1,25 @@
-
 services:
-  # API Gateway
+  # API Gateway Service
   - type: web
     name: ml-platform-api-gateway
     env: python
-    region: oregon  # or your preferred region
+    region: oregon  # or singapore, frankfurt, ohio, etc.
+    plan: free  # or starter/pro for better performance
+    rootDir: api_gateway
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn api_gateway:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn api_gateway:app --bind 0.0.0.0:$PORT --timeout 120
     envVars:
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY
         generateValue: true
+      # These will be updated after other services are deployed
       - key: PREPROCESSING_SERVICE_URL
-        value: https://ml-platform-preprocessing.onrender.com
+        sync: false  # We'll update this manually
       - key: ML_SERVICE_URL
-        value: https://ml-platform-ml-service.onrender.com
+        sync: false
       - key: DASHBOARD_SERVICE_URL
-        value: https://ml-platform-dashboard.onrender.com
+        sync: false
     healthCheckPath: /health
     autoDeploy: true
 
@@ -26,8 +28,10 @@ services:
     name: ml-platform-preprocessing
     env: python
     region: oregon
+    plan: free
+    rootDir: preprocessing_service
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn preprocessing_service:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn preprocessing_service:app --bind 0.0.0.0:$PORT --timeout 120
     envVars:
       - key: FLASK_ENV
         value: production
@@ -39,13 +43,15 @@ services:
     name: ml-platform-ml-service
     env: python
     region: oregon
+    plan: starter  # ML needs more resources, use starter plan
+    rootDir: ml_service
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn ml_service:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn ml_service:app --bind 0.0.0.0:$PORT --timeout 300
     envVars:
       - key: FLASK_ENV
         value: production
-      - key: MODEL_CACHE_SIZE
-        value: "100"
+      - key: PYTHONUNBUFFERED
+        value: "true"
     healthCheckPath: /health
     autoDeploy: true
 
@@ -54,8 +60,10 @@ services:
     name: ml-platform-dashboard
     env: python
     region: oregon
+    plan: free
+    rootDir: dashboard_service
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn dashboard_service:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn dashboard_service:app --bind 0.0.0.0:$PORT --timeout 120
     envVars:
       - key: FLASK_ENV
         value: production
