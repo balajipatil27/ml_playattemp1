@@ -1,0 +1,63 @@
+
+services:
+  # API Gateway
+  - type: web
+    name: ml-platform-api-gateway
+    env: python
+    region: oregon  # or your preferred region
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn api_gateway:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PREPROCESSING_SERVICE_URL
+        value: https://ml-platform-preprocessing.onrender.com
+      - key: ML_SERVICE_URL
+        value: https://ml-platform-ml-service.onrender.com
+      - key: DASHBOARD_SERVICE_URL
+        value: https://ml-platform-dashboard.onrender.com
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # Preprocessing Service
+  - type: web
+    name: ml-platform-preprocessing
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn preprocessing_service:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # ML Service
+  - type: web
+    name: ml-platform-ml-service
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn ml_service:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: MODEL_CACHE_SIZE
+        value: "100"
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # Dashboard Service
+  - type: web
+    name: ml-platform-dashboard
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn dashboard_service:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /health
+    autoDeploy: true
